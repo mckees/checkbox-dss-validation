@@ -50,4 +50,6 @@ cd build && cmake ..
 cmake --build .
 cmake --build . --target install
 
+git clone https://github.com/canonical/data-science-stack /tmp/data-science-stack
+
 exit 0

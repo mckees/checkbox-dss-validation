@@ -51,5 +51,5 @@ environ:
   NORMAL_USER
 estimated_duration: 1m
 command:
-  COMPUTE_SAMPLES_DIR=/tmp/compute-samples
-  cd $COMPUTE_SAMPLES_DIR/build && ctest -E .*hw
+  cd /tmp/data-science-stack
+  ./poc/intel/deploy.sh itex

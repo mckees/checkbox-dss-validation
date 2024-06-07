@@ -1,0 +1,29 @@
+id: opencl-regression
+unit: test plan
+_name: OpenCL regression testing plan
+include:
+  opencl/ocl.*
+bootstrap_include:
+    com.canonical.certification::executable
+    com.canonical.certification::snap
+    graphics_card
+
+id: itex-validation
+unit: test plan
+_name: OpenCL regression testing plan
+include:
+  itex/itex.*
+bootstrap_include:
+    com.canonical.certification::executable
+    com.canonical.certification::snap
+    graphics_card
+
+id: openvino-validation
+unit: test plan
+_name: OpenCL regression testing plan
+include:
+  openvino/openvino.*
+bootstrap_include:
+    com.canonical.certification::executable
+    com.canonical.certification::snap
+    graphics_card

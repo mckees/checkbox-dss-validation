@@ -37,11 +37,11 @@ template-resource: graphics_card
 template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
-id: opencl/ocl_regression_tests_{{ driver }}
+id: itex/itex_deploy_{{ driver }}
 category_id: opencl-regress
 flags: simple
 user: root
-_summary: Run OpenCL regression tests
+_summary: Run ITEX tests
 requires:
   executable.name == "clinfo"
 environ:
@@ -53,3 +53,50 @@ estimated_duration: 1m
 command:
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh itex
+  ./poc/intel/cleanup.sh
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: ipex/ipex_deploy_{{ driver }}
+category_id: opencl-regress
+flags: simple
+user: root
+_summary: Run IPEX tests
+requires:
+  executable.name == "clinfo"
+environ:
+  # necessary for local mode
+  XDG_SESSION_TYPE
+  XDG_RUNTIME_DIR
+  NORMAL_USER
+estimated_duration: 1m
+command:
+  cd /tmp/data-science-stack
+  ./poc/intel/deploy.sh ipex
+  ./poc/intel/cleanup.sh
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: openvino/openvino_deploy_{{ driver }}
+category_id: opencl-regress
+flags: simple
+user: root
+_summary: Run OpenVino tests
+requires:
+  executable.name == "clinfo"
+environ:
+  # necessary for local mode
+  XDG_SESSION_TYPE
+  XDG_RUNTIME_DIR
+  NORMAL_USER
+estimated_duration: 1m
+command:
+  cd /tmp/data-science-stack
+  ./poc/intel/deploy.sh openvino
+  ./poc/intel/cleanup.sh

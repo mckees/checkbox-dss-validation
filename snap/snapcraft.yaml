@@ -1,15 +1,15 @@
-name: checkbox-opencl-regression
-summary: Checkbox tests for the OpenCL Regression project
+name: checkbox-dss
+summary: Checkbox tests for validating the Data Science Stack
 description: |
-  Collection of tests to be run on devices that are part of the opencl-regression project
+  Collection of tests to be run on devices that are part of the dss-validation project
 version: '2.0'
 confinement: classic
 grade: stable
 
 base: core22
 
-# Here are the available applications of the opencl-regression checkbox provider snap
-# To run : snap run checkbox-opencl-regression.<app>
+# Here are the available applications of the dss-validation checkbox provider snap
+# To run : snap run checkbox-dss.<app>
 #
 # checkbox-cli:
 #   - checkbox client, can be used to talk to the checkbox daemon
@@ -35,9 +35,15 @@ apps:
   configure:
     command-chain: [bin/wrapper_local]
     command: bin/configure
-  regression-testing:
+  ipex-validation:
     command-chain: [bin/wrapper_local]
-    command: bin/regression-testing
+    command: bin/ipex-validation
+  itex-validation:
+    command-chain: [bin/wrapper_local]
+    command: bin/itex-validation
+  openvino-validation:
+    command-chain: [bin/wrapper_local]
+    command: bin/openvino-validation
   remote-slave:
     command-chain: [bin/wrapper_local]
     command: bin/checkbox-cli-wrapper slave
@@ -55,9 +61,9 @@ passthrough:
       command-chain: [bin/wrapper_local]
 
 parts:
-  checkbox-provider-opencl:
+  checkbox-provider-dss:
     plugin: dump
-    source: ./checkbox-provider-opencl
+    source: ./checkbox-provider-dss
     source-type: local
     build-snaps:
       - checkbox-provider-tools
@@ -71,7 +77,7 @@ parts:
       for path in $(find "/snap/checkbox22/current/providers/" -mindepth 1 -maxdepth 1 -type d); do export PROVIDERPATH=$path${PROVIDERPATH:+:$PROVIDERPATH}; done
       checkbox-provider-tools validate
       checkbox-provider-tools build
-      checkbox-provider-tools install --layout=relocatable --prefix=/providers/checkbox-provider-opencl --root="$SNAPCRAFT_PART_INSTALL"
+      checkbox-provider-tools install --layout=relocatable --prefix=/providers/checkbox-provider-dss --root="$SNAPCRAFT_PART_INSTALL"
   bin:
     plugin: dump
     source: bin/

@@ -41,7 +41,7 @@ id: itex/itex_deploy_{{ driver }}
 category_id: opencl-regress
 flags: simple
 user: root
-_summary: Run ITEX tests
+_summary: Run ITEX deployment script
 requires:
   executable.name == "clinfo"
 environ:
@@ -49,7 +49,7 @@ environ:
   XDG_SESSION_TYPE
   XDG_RUNTIME_DIR
   NORMAL_USER
-estimated_duration: 1m
+estimated_duration: 3m
 command:
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh itex
@@ -64,7 +64,7 @@ id: ipex/ipex_deploy_{{ driver }}
 category_id: opencl-regress
 flags: simple
 user: root
-_summary: Run IPEX tests
+_summary: Run IPEX deployment script
 requires:
   executable.name == "clinfo"
 environ:
@@ -72,7 +72,7 @@ environ:
   XDG_SESSION_TYPE
   XDG_RUNTIME_DIR
   NORMAL_USER
-estimated_duration: 1m
+estimated_duration: 3m
 command:
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh ipex
@@ -87,7 +87,7 @@ id: openvino/openvino_deploy_{{ driver }}
 category_id: opencl-regress
 flags: simple
 user: root
-_summary: Run OpenVino tests
+_summary: Run OpenVino deployment script
 requires:
   executable.name == "clinfo"
 environ:
@@ -95,7 +95,7 @@ environ:
   XDG_SESSION_TYPE
   XDG_RUNTIME_DIR
   NORMAL_USER
-estimated_duration: 1m
+estimated_duration: 3m
 command:
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh openvino

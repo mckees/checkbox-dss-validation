@@ -51,6 +51,7 @@ environ:
   NORMAL_USER
 estimated_duration: 3m
 command:
+  set -e
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh itex
   ./poc/intel/cleanup.sh
@@ -74,6 +75,7 @@ environ:
   NORMAL_USER
 estimated_duration: 3m
 command:
+  set -e
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh ipex
   ./poc/intel/cleanup.sh

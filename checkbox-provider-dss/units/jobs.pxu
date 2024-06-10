@@ -97,6 +97,7 @@ environ:
   NORMAL_USER
 estimated_duration: 3m
 command:
+  set -e
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh openvino
   ./poc/intel/cleanup.sh

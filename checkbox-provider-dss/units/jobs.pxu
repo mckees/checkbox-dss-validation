@@ -48,6 +48,7 @@ environ:
 estimated_duration: 1m
 command:
   set -e
+  cd /tmp/data-science-stack
   ./poc/intel/cleanup.sh
 
 unit: template

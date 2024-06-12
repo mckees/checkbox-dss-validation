@@ -8,8 +8,6 @@ category_id: opencl-regress
 flags: simple
 user: root
 _summary: Check to see if there are any CL devices found
-requires:
-  executable.name == "clinfo"
 environ:
   # necessary for local mode
   XDG_SESSION_TYPE
@@ -42,8 +40,6 @@ category_id: opencl-regress
 flags: simple
 user: root
 _summary: Run DSS cleanup script
-requires:
-  executable.name == "clinfo"
 environ:
   # necessary for local mode
   XDG_SESSION_TYPE
@@ -65,8 +61,6 @@ flags: simple
 user: root
 _summary: Run ITEX deployment script
 after: dss/cleanup_container
-requires:
-  executable.name == "clinfo"
 environ:
   # necessary for local mode
   XDG_SESSION_TYPE
@@ -91,8 +85,6 @@ flags: simple
 user: root
 _summary: Run IPEX deployment script
 after: dss/cleanup_container
-requires:
-  executable.name == "clinfo"
 environ:
   # necessary for local mode
   XDG_SESSION_TYPE
@@ -116,8 +108,6 @@ flags: simple
 user: root
 _summary: Run OpenVino deployment script
 after: dss/cleanup_container
-requires:
-  executable.name == "clinfo"
 environ:
   # necessary for local mode
   XDG_SESSION_TYPE

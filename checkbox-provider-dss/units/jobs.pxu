@@ -30,11 +30,6 @@ command:
       fi
   done
 
-unit: template
-template-resource: graphics_card
-template-filter: graphics_card.driver in ['i915']
-template-engine: jinja2
-template-unit: job
 id: dss/cleanup_container
 category_id: opencl-regress
 flags: simple

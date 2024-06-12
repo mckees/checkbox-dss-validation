@@ -2,7 +2,6 @@ id: ipex-validation
 unit: test plan
 _name: IPEX validation testing plan
 include:
-  opencl/ocl_device_check.*
   ipex/ipex.*
 bootstrap_include:
     com.canonical.certification::executable
@@ -13,7 +12,6 @@ id: itex-validation
 unit: test plan
 _name: ITEX validation testing plan
 include:
-  opencl/ocl_device_check.*
   itex/itex.*
 bootstrap_include:
     com.canonical.certification::executable
@@ -24,7 +22,6 @@ id: openvino-validation
 unit: test plan
 _name: OpenVino validation testing plan
 include:
-  opencl/ocl_device_check.*
   openvino/openvino.*
 bootstrap_include:
     com.canonical.certification::executable

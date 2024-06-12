@@ -1,0 +1,7 @@
+#!/bin/bash
+
+USER=$(id -nu ${SNAP_UID})
+sudo snap remove microk8s --purge
+sudo snap remove kubectl --purge
+sudo deluser ${USER} snap_microk8s >& /dev/null
+sudo deluser ${USER} microk8s >& /dev/null

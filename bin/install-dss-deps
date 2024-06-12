@@ -1,0 +1,35 @@
+#!/bin/bash
+set -e
+
+echo -e "\nStep 1/3: Deploying MicroK8s snap"
+sudo snap install microk8s --classic --channel=1.29/stable
+
+USER=$(id -nu ${SNAP_UID})
+HOME=${SNAP_REAL_HOME}
+
+sudo usermod -a -G snap_microk8s $USER
+sudo usermod -a -G microk8s $USER
+sudo mkdir -p $HOME/.kube
+sudo mkdir -p $HOME/.local/share
+sudo chown -f -R $USER $HOME/.kube
+sudo chown -f -R $USER $HOME/.local/share
+
+echo -e "\nStep 2/3: Configuring MicroK8s addons"
+sudo microk8s enable dns
+sudo microk8s enable hostpath-storage
+sudo microk8s enable rbac
+
+echo "Waiting for microK8s addons to become ready..."
+sudo microk8s.kubectl wait \
+  --for=condition=available \
+  --timeout 1200s \
+  -n kube-system \
+  deployment/coredns \
+  deployment/hostpath-provisioner
+sudo microk8s.kubectl -n kube-system rollout status ds/calico-node
+
+# https://github.com/canonical/microk8s/issues/4453
+sudo snap install kubectl --classic --channel=1.29/stable
+# hack as redirecting stdout anywhere but /dev/null throws a permission denied error
+sudo microk8s kubectl config view --raw | tee $HOME/.kube/config > /dev/null
+

@@ -54,6 +54,8 @@ command:
   set -e
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh itex
+  sudo microk8s.kubectl wait --for condition=available --timeout 1200s -n dss deployment -l app=dss-mlflow
+  sudo microk8s.kubectl wait --for condition=available --timeout 1200s -n dss deployment -l app=user-notebook-tensorflow
   ./poc/intel/cleanup.sh
 
 unit: template
@@ -78,6 +80,7 @@ command:
   set -e
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh ipex
+  sudo microk8s.kubectl wait --for condition=available --timeout 1200s -n dss deployment -l app=dss-mlflow
   ./poc/intel/cleanup.sh
 
 unit: template

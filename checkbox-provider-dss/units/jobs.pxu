@@ -37,11 +37,34 @@ template-resource: graphics_card
 template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
+id: dss/cleanup_container
+category_id: opencl-regress
+flags: simple
+user: root
+_summary: Run DSS cleanup script
+requires:
+  executable.name == "clinfo"
+environ:
+  # necessary for local mode
+  XDG_SESSION_TYPE
+  XDG_RUNTIME_DIR
+  NORMAL_USER
+estimated_duration: 1m
+command:
+  set -e
+  ./poc/intel/cleanup.sh
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
 id: itex/itex_deploy_{{ driver }}
 category_id: opencl-regress
 flags: simple
 user: root
 _summary: Run ITEX deployment script
+after: dss/cleanup_container
 requires:
   executable.name == "clinfo"
 environ:
@@ -56,7 +79,6 @@ command:
   ./poc/intel/deploy.sh itex
   sudo microk8s.kubectl wait --for condition=available --timeout 1200s -n dss deployment -l app=dss-mlflow
   sudo microk8s.kubectl wait --for condition=available --timeout 1200s -n dss deployment -l app=user-notebook-tensorflow
-  ./poc/intel/cleanup.sh
 
 unit: template
 template-resource: graphics_card
@@ -68,6 +90,7 @@ category_id: opencl-regress
 flags: simple
 user: root
 _summary: Run IPEX deployment script
+after: dss/cleanup_container
 requires:
   executable.name == "clinfo"
 environ:
@@ -81,7 +104,6 @@ command:
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh ipex
   sudo microk8s.kubectl wait --for condition=available --timeout 1200s -n dss deployment -l app=dss-mlflow
-  ./poc/intel/cleanup.sh
 
 unit: template
 template-resource: graphics_card
@@ -93,6 +115,7 @@ category_id: opencl-regress
 flags: simple
 user: root
 _summary: Run OpenVino deployment script
+after: dss/cleanup_container
 requires:
   executable.name == "clinfo"
 environ:
@@ -105,4 +128,3 @@ command:
   set -e
   cd /tmp/data-science-stack
   ./poc/intel/deploy.sh openvino
-  ./poc/intel/cleanup.sh

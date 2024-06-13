@@ -7,7 +7,6 @@ sudo snap install microk8s --classic --channel=1.29/stable
 USER=$(id -nu ${SNAP_UID})
 HOME=${SNAP_REAL_HOME}
 
-sudo usermod -a -G snap_microk8s $USER
 sudo usermod -a -G microk8s $USER
 sudo mkdir -p $HOME/.kube
 sudo mkdir -p $HOME/.local/share

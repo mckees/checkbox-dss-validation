@@ -44,6 +44,9 @@ apps:
   openvino-validation:
     command-chain: [bin/wrapper_local]
     command: bin/openvino-validation
+  gpu-plugin-validation:
+    command-chain: [bin/wrapper_local]
+    command: bin/gpu-plugin-validation
   remote-slave:
     command-chain: [bin/wrapper_local]
     command: bin/checkbox-cli-wrapper slave
@@ -54,6 +57,10 @@ apps:
     command: bin/shell-wrapper
   install-full-deps:
     command: bin/install-full-deps
+  install-dss-deps:
+    command: bin/install-dss-deps
+  remove-dss-deps:
+    command: bin/remove-dss-deps
 
 passthrough:
   hooks:

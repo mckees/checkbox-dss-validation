@@ -1,3 +1,15 @@
+id: gpu-plugin-validation
+unit: test plan
+_name: Intel GPU k8s device plugin testing plan
+include:
+  intel_gpu_plugin/microk8s.*
+  intel_gpu_plugin/daemonset_check.*
+  intel_gpu_plugin/cleanup_tests.*
+bootstrap_include:
+    com.canonical.certification::executable
+    com.canonical.certification::snap
+    graphics_card
+
 id: ipex-validation
 unit: test plan
 _name: IPEX validation testing plan

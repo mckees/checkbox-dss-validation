@@ -37,6 +37,106 @@ template-resource: graphics_card
 template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
+id: intel_gpu_plugin/microk8s_install_intel_gpu_plugin_{{ driver }}
+category_id: opencl-regress
+flags: simple
+requires: executable.name == 'kubectl'
+_summary: Install Intel K8s GPU Device Plugin
+estimated_duration: 2m
+command:
+  # Using kubectl directly due to this bug: https://github.com/canonical/microk8s/issues/4453
+  kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd?ref=v0.29.0'
+  kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd/overlays/node-feature-rules?ref=v0.29.0'
+  kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/gpu_plugin/overlays/nfd_labeled_nodes?ref=v0.29.0'
+  sleep 5
+  kubectl -n node-feature-discovery rollout status ds/nfd-worker
+  kubectl -n default rollout status ds/intel-gpu-plugin
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: intel_gpu_plugin/daemonset_check_name_{{ driver }}
+category_id: opencl-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check DaemonSet Name
+estimated_duration: 1s
+command:
+  result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].metadata.name}')
+  if [ "${result}" = "intel-gpu-plugin" ]; then
+      echo "Test success: 'intel-gpu-plugin' daemonset is deployed!"
+  else
+      echo "Test failure: expected daemonset name 'intel-gpu-plugin' but got ${result}"
+      exit 1
+  fi
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: intel_gpu_plugin/daemonset_check_number_available_{{ driver }}
+category_id: opencl-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check number of available daemonsets
+estimated_duration: 1s
+command:
+  result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberAvailable}')
+  if [ "${result}" = "1" ]; then
+      echo "Test success: 1 daemonset in numberAvailable status."
+  else
+      echo "Test failure: expected numberAvailable to be 1 but got ${result}"
+      exit 1
+  fi
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: intel_gpu_plugin/daemonset_check_number_ready_{{ driver }}
+category_id: opencl-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check number of ready daemonsets
+estimated_duration: 1s
+command:
+  result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberReady}')
+  if [ "${result}" = "1" ]; then
+      echo "Test success: 1 daemonset in numberReady status."
+  else
+      echo "Test failure: expected numberReady to be 1 but got ${result}"
+      exit 1
+  fi
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: intel_gpu_plugin/cleanup_tests_{{ driver }}
+category_id: opencl-regress
+flags: simple
+user: root
+requires: executable.name == 'microk8s'
+_summary: Clean up after tests
+environ:
+  NORMAL_USER
+estimated_duration: 2m
+command:
+  for node in $(sudo microk8s kubectl get nodes -o name); do
+      microk8s.kubectl drain --ignore-daemonsets --delete-emptydir-data "${node}"
+  done
+  echo "Successfully cleaned up microk8s node(s)."
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
 id: itex/itex_deploy_{{ driver }}
 category_id: opencl-regress
 flags: simple

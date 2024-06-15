@@ -4,7 +4,8 @@ _name: Intel GPU k8s device plugin testing plan
 include:
   intel_gpu_plugin/microk8s.*
   intel_gpu_plugin/daemonset_check.*
-  intel_gpu_plugin/cleanup_tests.*
+  intel_gpu_plugin/dss_.*
+  intel_gpu_plugin/openvino_.*
 bootstrap_include:
     com.canonical.certification::executable
     com.canonical.certification::snap

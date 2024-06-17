@@ -46,6 +46,7 @@ requires: executable.name == 'kubectl'
 _summary: Install Intel K8s GPU Device Plugin
 estimated_duration: 2m
 command:
+  set -e
   # Using kubectl directly due to this bug: https://github.com/canonical/microk8s/issues/4453
   kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd?ref=v0.29.0'
   kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd/overlays/node-feature-rules?ref=v0.29.0'
@@ -67,6 +68,7 @@ requires: executable.name == 'microk8s'
 _summary: Check DaemonSet Name
 estimated_duration: 1s
 command:
+  set -e
   result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].metadata.name}')
   if [ "${result}" = "intel-gpu-plugin" ]; then
       echo "Test success: 'intel-gpu-plugin' daemonset is deployed!"
@@ -87,6 +89,7 @@ requires: executable.name == 'microk8s'
 _summary: Check number of available daemonsets
 estimated_duration: 1s
 command:
+  set -e
   result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberAvailable}')
   if [ "${result}" = "1" ]; then
       echo "Test success: 1 daemonset in numberAvailable status."
@@ -107,6 +110,7 @@ requires: executable.name == 'microk8s'
 _summary: Check number of ready daemonsets
 estimated_duration: 1s
 command:
+  set -e
   result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberReady}')
   if [ "${result}" = "1" ]; then
       echo "Test success: 1 daemonset in numberReady status."
@@ -129,6 +133,7 @@ requires: executable.name == 'microk8s'
 _summary: Initialize DSS environment with common k8s manifests
 estimated_duration: 2m
 command:
+  set -e
   DSS_COMMON_MANIFESTS=/tmp/data-science-stack/poc/common-manifests
   sudo microk8s.kubectl apply -f ${DSS_COMMON_MANIFESTS}/namespace.yaml
   sudo microk8s.kubectl apply -f ${DSS_COMMON_MANIFESTS}/mlflow.yaml
@@ -141,13 +146,14 @@ template-resource: graphics_card
 template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
-id: intel_gpu_plugin/dss_check_service_name{{ driver }}
+id: intel_gpu_plugin/dss_check_service_name_{{ driver }}
 category_id: opencl-regress
 flags: simple
 requires: executable.name == 'microk8s'
 _summary: Check Service Name
 estimated_duration: 1s
 command:
+  set -e
   result=$(microk8s.kubectl get service -n dss -o jsonpath='{.items[0].metadata.name}')
   if [ "${result}" = "mlflow" ]; then
       echo "Test success: 'mlflow' service is deployed!"
@@ -205,6 +211,7 @@ requires: executable.name == 'microk8s'
 _summary: Check OpenVINO Deployment
 estimated_duration: 1s
 command:
+  set -e
   all_apps=$(microk8s.kubectl get deployment.apps -n dss -o jsonpath='{.items..metadata.name}')
   if grep -qw "notebook-openvino" <<<${all_apps}; then
       echo "Test success: 'notebook-openvino' app is deployed!"

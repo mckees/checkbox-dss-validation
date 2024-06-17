@@ -32,3 +32,25 @@ sudo snap install kubectl --classic --channel=1.29/stable
 # hack as redirecting stdout anywhere but /dev/null throws a permission denied error
 # see: https://forum.snapcraft.io/t/eksctl-cannot-write-to-stdout/17254/4
 sudo microk8s.kubectl config view --raw | tee $HOME/.kube/config > /dev/null
+
+echo -e "\nStep 3/3: Installing Docker"
+# Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo groupadd -f docker
+sudo usermod -aG docker $USER
+
+# Clone DSS repo for K8s manifest files
+git clone https://github.com/canonical/data-science-stack /tmp/data-science-stack

@@ -40,7 +40,7 @@ Some test need dependencies, so in order to run all tests, you might way to inst
 A helper script is available to install them:
 
 ```shell
-checkbox-dss.install-full-deps
+checkbox-dss.install-dss-deps
 ```
 
 # Automated Run
@@ -48,10 +48,18 @@ checkbox-dss.install-full-deps
 To run the test plans:
 
 ```shell
-checkbox-dss.ipex-validation
-checkbox-dss.itex-validation
-checkbox-dss.openvino-validation
+checkbox-dss.gpu-plugin-validation
 ```
+
+# Cleanup
+
+WARNING: The following steps will remove kubectl and microk8s from your machine. If you wish to keep them, do not run.
+
+To clean up and uninstall all installed tests, run:
+```shell
+checkbox-dss.remove-dss-deps
+```
+
 # Develop the Checkbox DSS provider
 
 Since snaps are immutable, it is not possible to modify the content of the scripts or the test cases. Fortunately, Checkbox provides a functionality to side-load a provider on the DUT.

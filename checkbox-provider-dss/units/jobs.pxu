@@ -54,6 +54,9 @@ command:
   sleep 5
   kubectl -n node-feature-discovery rollout status ds/nfd-worker
   kubectl -n default rollout status ds/intel-gpu-plugin
+  SLEEP_SECS=15
+  echo "Info: sleeping for ${SLEEP_SECS} to allow pod status to update for subsequent tests."
+  sleep ${SLEEP_SECS}
   echo "Test success: Intel K8s GPU Device Plugin deployed."
 
 unit: template
@@ -73,7 +76,7 @@ command:
   if [ "${result}" = "intel-gpu-plugin" ]; then
       echo "Test success: 'intel-gpu-plugin' daemonset is deployed!"
   else
-      echo "Test failure: expected daemonset name 'intel-gpu-plugin' but got ${result}"
+      >&2 echo "Test failure: expected daemonset name 'intel-gpu-plugin' but got ${result}"
       exit 1
   fi
 
@@ -90,11 +93,24 @@ _summary: Check number of available daemonsets
 estimated_duration: 1s
 command:
   set -e
+  SLEEP_SECS=10
+  RETRIES=10
   result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberAvailable}')
+  retry_cnt=0
+  while [ -z "${result}" ]; do
+      if [ "${retry_cnt}" = "10" ]; then
+          >&2 echo "Test failure: empty numberAvailable result after ${retry_cnt} retries."
+          exit 1
+      fi
+      retry_cnt=$((retry_cnt+1))
+      echo "Info: received empty numberAvailable result. Sleeping for ${SLEEP_SECS} seconds. Retry $retry_cnt/$RETRIES."
+      sleep ${SLEEP_SECS}
+      result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberAvailable}')
+  done
   if [ "${result}" = "1" ]; then
       echo "Test success: 1 daemonset in numberAvailable status."
   else
-      echo "Test failure: expected numberAvailable to be 1 but got ${result}"
+      >&2 echo "Test failure: expected numberAvailable to be 1 but got ${result}"
       exit 1
   fi
 
@@ -111,11 +127,24 @@ _summary: Check number of ready daemonsets
 estimated_duration: 1s
 command:
   set -e
+  SLEEP_SECS=10
+  RETRIES=10
   result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberReady}')
+  retry_cnt=0
+  while [ -z "${result}" ]; do
+      if [ "${retry_cnt}" = "10" ]; then
+          >&2 echo "Test failure: empty numberReady result after ${retry_cnt} retries."
+          exit 1
+      fi
+      retry_cnt=$((retry_cnt+1))
+      echo "Info: received empty numberReady result. Sleeping for ${SLEEP_SECS} seconds. Retry $retry_cnt/$RETRIES."
+      sleep ${SLEEP_SECS}
+      result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberReady}')
+  done
   if [ "${result}" = "1" ]; then
       echo "Test success: 1 daemonset in numberReady status."
   else
-      echo "Test failure: expected numberReady to be 1 but got ${result}"
+      >&2 echo "Test failure: expected numberReady to be 1 but got ${result}"
       exit 1
   fi
 
@@ -158,7 +187,7 @@ command:
   if [ "${result}" = "mlflow" ]; then
       echo "Test success: 'mlflow' service is deployed!"
   else
-      echo "Test failure: expected service name 'mlflow' but got ${result}"
+      >&2 echo "Test failure: expected service name 'mlflow' but got ${result}"
       exit 1
   fi
 
@@ -216,7 +245,7 @@ command:
   if grep -qw "notebook-openvino" <<<${all_apps}; then
       echo "Test success: 'notebook-openvino' app is deployed!"
   else
-      echo "Test failure: expected result to contain app name 'notebook-openvino' but got ${result}"
+      >&2 echo "Test failure: expected result to contain app name 'notebook-openvino' but got ${result}"
       exit 1
   fi
 

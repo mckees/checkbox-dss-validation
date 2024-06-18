@@ -35,15 +35,6 @@ apps:
   configure:
     command-chain: [bin/wrapper_local]
     command: bin/configure
-  ipex-validation:
-    command-chain: [bin/wrapper_local]
-    command: bin/ipex-validation
-  itex-validation:
-    command-chain: [bin/wrapper_local]
-    command: bin/itex-validation
-  openvino-validation:
-    command-chain: [bin/wrapper_local]
-    command: bin/openvino-validation
   gpu-plugin-validation:
     command-chain: [bin/wrapper_local]
     command: bin/gpu-plugin-validation
@@ -55,8 +46,6 @@ apps:
   shell:
     command-chain: [bin/wrapper_local]
     command: bin/shell-wrapper
-  install-full-deps:
-    command: bin/install-full-deps
   install-dss-deps:
     command: bin/install-dss-deps
   remove-dss-deps:

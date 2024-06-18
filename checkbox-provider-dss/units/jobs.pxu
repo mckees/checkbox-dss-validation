@@ -262,3 +262,108 @@ command:
     print("Test failure: No Intel GPU device available to OpenVINO.", file=sys.stderr)
     sys.exit(1)
   EOF
+
+id: itex/check_itex_import
+category_id: dss-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check to see if itex can be imported
+estimated_duration: 5m
+command:
+  TIMEOUT=1200s
+  DSS_INTEL_MANIFESTS=/tmp/data-science-stack/poc/intel/manifests/
+  launch_notebook() {
+    local fullname=$1
+    local app=$2
+    echo -e "\n\$ dss start ${app} notebook"
+    sudo microk8s kubectl apply -f ${DSS_INTEL_MANIFESTS}/notebook-${app}.yaml
+    sudo microk8s.kubectl wait \
+      --for condition=available \
+      --timeout $TIMEOUT \
+      -n dss\
+      deployment \
+      -l app=user-notebook-${fullname}
+    echo -e "\n\$ dss status"
+    MLFLOW_IP=$(sudo microk8s.kubectl get svc \
+      -n dss \
+      -o jsonpath="{.spec.clusterIP}" \
+      mlflow)
+    NOTEBOOK_IP=$(sudo microk8s.kubectl get svc \
+      -n dss \
+      -o jsonpath="{.spec.clusterIP}" \
+      user-notebook-${fullname})
+    echo "DSS has started successfully!"
+  }
+  remove_itex() {
+    echo "Removing ITEX"
+    sudo microk8s.kubectl delete -n dss deployment.apps/notebook-tensorflow
+    sudo microk8s.kubectl delete -n dss service/user-notebook-tensorflow
+  }
+  launch_notebook tensorflow itex
+  echo "Starting itex import test"
+  pod=$(kubectl get pods -n dss -o=jsonpath='{.items..metadata.name}' | grep -o 'notebook-tensorflow.*')
+  echo "Found Tensorflow pod: ${pod}"
+  sudo microk8s kubectl -n dss exec ${pod} -- python3 -c "import intel_extension_for_tensorflow as itex; import tensorflow; import jupyter"
+  if [ "$?" = 0 ]
+  then
+    echo "PASS: Found module"
+    remove_itex
+    exit 0
+  else
+    >&2 echo "FAIL: Did not find ITEX python module"
+    remove_itex
+    exit 1
+  fi
+
+id: ipex/check_ipex_import
+category_id: dss-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check to see if ipex can be imported
+estimated_duration: 5m
+command:
+  TIMEOUT=1200s
+  DSS_INTEL_MANIFESTS=/tmp/data-science-stack/poc/intel/manifests/
+  launch_notebook() {
+    local fullname=$1
+    local app=$2
+    echo -e "\n\$ dss start ${app} notebook"
+    sudo microk8s kubectl apply -f ${DSS_INTEL_MANIFESTS}/notebook-${app}.yaml
+    echo -e "\n\$ dss ${app} manifest applied"
+    sudo microk8s.kubectl wait \
+      --for condition=available \
+      --timeout $TIMEOUT \
+      -n dss\
+      deployment \
+      -l app=user-notebook-${fullname} > /tmp/ipex_log.txt
+    echo -e "\n\$ dss status"
+    MLFLOW_IP=$(sudo microk8s.kubectl get svc \
+      -n dss \
+      -o jsonpath="{.spec.clusterIP}" \
+      mlflow)
+    NOTEBOOK_IP=$(sudo microk8s.kubectl get svc \
+      -n dss \
+      -o jsonpath="{.spec.clusterIP}" \
+      user-notebook-${fullname})
+    echo "DSS has started successfully!"
+  }
+  remove_ipex() {
+    echo "Removing IPEX"
+    sudo microk8s.kubectl delete -n dss deployment.apps/notebook-pytorch
+    sudo microk8s.kubectl delete -n dss service/user-notebook-pytorch
+  }
+  launch_notebook pytorch ipex
+  echo "Starting ipex import test"
+  pod=$(kubectl get pods -n dss -o=jsonpath='{.items..metadata.name}' | grep -o 'notebook-pytorch.*')
+  echo "Found PyTorch pod: ${pod}"
+  sudo microk8s kubectl -n dss exec ${pod} -- python3 -c "import intel_extension_for_pytorch as ipex; import torch; import jupyter"
+  if [ "$?" = 0 ]
+  then
+    echo "PASS: Found module"
+    remove_ipex
+    exit 0
+  else
+    >&2 echo "FAIL: Did not find IPEX python module"
+    remove_ipex
+    exit 1
+  fi

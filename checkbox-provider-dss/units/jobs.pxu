@@ -357,7 +357,6 @@ command:
   pod=$(kubectl get pods -n dss -o=jsonpath='{.items..metadata.name}' | grep -o 'notebook-pytorch.*')
   echo "Found PyTorch pod: ${pod}"
   sudo microk8s kubectl -n dss exec ${pod} -- python3 -c "import intel_extension_for_pytorch as ipex; import torch; import jupyter"
-  remove_ipex
   if [ "$?" = 0 ]
   then
     echo "PASS: Found module"

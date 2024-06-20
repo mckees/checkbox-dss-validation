@@ -6,7 +6,7 @@ template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
 id: intel_gpu_plugin/microk8s_install_intel_gpu_plugin_{{ driver }}
-category_id: opencl-regress
+category_id: dss-regress
 flags: simple
 requires: executable.name == 'kubectl'
 _summary: Install Intel K8s GPU Device Plugin
@@ -31,7 +31,7 @@ template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
 id: intel_gpu_plugin/daemonset_check_name_{{ driver }}
-category_id: opencl-regress
+category_id: dss-regress
 flags: simple
 requires: executable.name == 'microk8s'
 _summary: Check DaemonSet Name
@@ -52,7 +52,7 @@ template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
 id: intel_gpu_plugin/daemonset_check_number_available_{{ driver }}
-category_id: opencl-regress
+category_id: dss-regress
 flags: simple
 requires: executable.name == 'microk8s'
 _summary: Check number of available daemonsets
@@ -86,7 +86,7 @@ template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
 id: intel_gpu_plugin/daemonset_check_number_ready_{{ driver }}
-category_id: opencl-regress
+category_id: dss-regress
 flags: simple
 requires: executable.name == 'microk8s'
 _summary: Check number of ready daemonsets
@@ -122,7 +122,7 @@ template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
 id: intel_gpu_plugin/dss_initialize_{{ driver }}
-category_id: opencl-regress
+category_id: dss-regress
 flags: simple
 requires: executable.name == 'microk8s'
 _summary: Initialize DSS environment with common k8s manifests
@@ -142,7 +142,7 @@ template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
 id: intel_gpu_plugin/dss_check_service_name_{{ driver }}
-category_id: opencl-regress
+category_id: dss-regress
 flags: simple
 requires: executable.name == 'microk8s'
 _summary: Check Service Name
@@ -165,7 +165,7 @@ template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
 id: intel_gpu_plugin/openvino_start_{{ driver }}
-category_id: opencl-regress
+category_id: dss-regress
 flags: simple
 requires:
   executable.name == 'docker'
@@ -200,7 +200,7 @@ template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
 id: intel_gpu_plugin/openvino_deployment_{{ driver }}
-category_id: opencl-regress
+category_id: dss-regress
 flags: simple
 requires: executable.name == 'microk8s'
 _summary: Check OpenVINO Deployment
@@ -221,7 +221,7 @@ template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
 id: intel_gpu_plugin/openvino_libs_installed_{{ driver }}
-category_id: opencl-regress
+category_id: dss-regress
 flags: simple
 requires: executable.name == 'microk8s'
 _summary: Check jupyter and openvino python packages in OpenVINO container
@@ -240,7 +240,7 @@ template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
 id: intel_gpu_plugin/openvino_gpu_avail_{{ driver }}
-category_id: opencl-regress
+category_id: dss-regress
 flags: simple
 requires: executable.name == 'microk8s'
 _summary: Check OpenVINO GPU Availability

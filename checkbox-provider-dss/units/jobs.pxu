@@ -32,6 +32,8 @@ command:
       fi
   done
 
+# TODO: add host-level Intel GPU checks (lspci, ls /dev/dri)
+
 unit: template
 template-resource: graphics_card
 template-filter: graphics_card.driver in ['i915']
@@ -44,6 +46,7 @@ requires: executable.name == 'kubectl'
 _summary: Install Intel K8s GPU Device Plugin
 estimated_duration: 2m
 command:
+  set -e
   # Using kubectl directly due to this bug: https://github.com/canonical/microk8s/issues/4453
   kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd?ref=v0.29.0'
   kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd/overlays/node-feature-rules?ref=v0.29.0'
@@ -51,6 +54,10 @@ command:
   sleep 5
   kubectl -n node-feature-discovery rollout status ds/nfd-worker
   kubectl -n default rollout status ds/intel-gpu-plugin
+  SLEEP_SECS=15
+  echo "Info: sleeping for ${SLEEP_SECS} to allow pod status to update for subsequent tests."
+  sleep ${SLEEP_SECS}
+  echo "Test success: Intel K8s GPU Device Plugin deployed."
 
 unit: template
 template-resource: graphics_card
@@ -64,11 +71,12 @@ requires: executable.name == 'microk8s'
 _summary: Check DaemonSet Name
 estimated_duration: 1s
 command:
+  set -e
   result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].metadata.name}')
   if [ "${result}" = "intel-gpu-plugin" ]; then
       echo "Test success: 'intel-gpu-plugin' daemonset is deployed!"
   else
-      echo "Test failure: expected daemonset name 'intel-gpu-plugin' but got ${result}"
+      >&2 echo "Test failure: expected daemonset name 'intel-gpu-plugin' but got ${result}"
       exit 1
   fi
 
@@ -84,11 +92,25 @@ requires: executable.name == 'microk8s'
 _summary: Check number of available daemonsets
 estimated_duration: 1s
 command:
+  set -e
+  SLEEP_SECS=10
+  RETRIES=10
   result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberAvailable}')
+  retry_cnt=0
+  while [ -z "${result}" ]; do
+      if [ "${retry_cnt}" = "10" ]; then
+          >&2 echo "Test failure: empty numberAvailable result after ${retry_cnt} retries."
+          exit 1
+      fi
+      retry_cnt=$((retry_cnt+1))
+      echo "Info: received empty numberAvailable result. Sleeping for ${SLEEP_SECS} seconds. Retry $retry_cnt/$RETRIES."
+      sleep ${SLEEP_SECS}
+      result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberAvailable}')
+  done
   if [ "${result}" = "1" ]; then
       echo "Test success: 1 daemonset in numberAvailable status."
   else
-      echo "Test failure: expected numberAvailable to be 1 but got ${result}"
+      >&2 echo "Test failure: expected numberAvailable to be 1 but got ${result}"
       exit 1
   fi
 
@@ -104,11 +126,126 @@ requires: executable.name == 'microk8s'
 _summary: Check number of ready daemonsets
 estimated_duration: 1s
 command:
+  set -e
+  SLEEP_SECS=10
+  RETRIES=10
   result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberReady}')
+  retry_cnt=0
+  while [ -z "${result}" ]; do
+      if [ "${retry_cnt}" = "10" ]; then
+          >&2 echo "Test failure: empty numberReady result after ${retry_cnt} retries."
+          exit 1
+      fi
+      retry_cnt=$((retry_cnt+1))
+      echo "Info: received empty numberReady result. Sleeping for ${SLEEP_SECS} seconds. Retry $retry_cnt/$RETRIES."
+      sleep ${SLEEP_SECS}
+      result=$(microk8s.kubectl get daemonset.apps -o jsonpath='{.items[0].status.numberReady}')
+  done
   if [ "${result}" = "1" ]; then
       echo "Test success: 1 daemonset in numberReady status."
   else
-      echo "Test failure: expected numberReady to be 1 but got ${result}"
+      >&2 echo "Test failure: expected numberReady to be 1 but got ${result}"
+      exit 1
+  fi
+
+# TODO: add node label checks
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: intel_gpu_plugin/dss_initialize_{{ driver }}
+category_id: opencl-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Initialize DSS environment with common k8s manifests
+estimated_duration: 2m
+command:
+  set -e
+  DSS_COMMON_MANIFESTS=/tmp/data-science-stack/poc/common-manifests
+  sudo microk8s.kubectl apply -f ${DSS_COMMON_MANIFESTS}/namespace.yaml
+  sudo microk8s.kubectl apply -f ${DSS_COMMON_MANIFESTS}/mlflow.yaml
+  sudo microk8s.kubectl apply -f ${DSS_COMMON_MANIFESTS}/notebooks.yaml
+  sudo microk8s.kubectl wait --for condition=available --timeout 1200s -n dss deployment -l app=dss-mlflow
+  echo "Test success: common DSS manifests deployed."
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: intel_gpu_plugin/dss_check_service_name_{{ driver }}
+category_id: opencl-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check Service Name
+estimated_duration: 1s
+command:
+  set -e
+  result=$(microk8s.kubectl get service -n dss -o jsonpath='{.items[0].metadata.name}')
+  if [ "${result}" = "mlflow" ]; then
+      echo "Test success: 'mlflow' service is deployed!"
+  else
+      >&2 echo "Test failure: expected service name 'mlflow' but got ${result}"
+      exit 1
+  fi
+
+# TODO: check other service and deployment details
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: intel_gpu_plugin/openvino_start_{{ driver }}
+category_id: opencl-regress
+flags: simple
+requires:
+  executable.name == 'docker'
+  executable.name == 'microk8s'
+_summary: Launch OpenVINO+Jupyter container
+estimated_duration: 6m
+command:
+  set -e
+  DSS_INTEL_POC_ROOT=/tmp/data-science-stack/poc/intel
+  OPENVINO_IMAGE="local/openvinotoolkit:render-addon"
+  OPENVINO_TAR_IMAGE="/tmp/openvino.tar"
+  echo "Building OpenVINO Docker image locally. Please be patient."
+  docker build -q -t local/openvinotoolkit:mainbranch github.com/openvinotoolkit/openvino_notebooks
+  render_gid=$(getent group render | cut -d: -f3)
+  container_user=$(docker run --rm local/openvinotoolkit:mainbranch /usr/bin/whoami)
+  cat ${DSS_INTEL_POC_ROOT}/openvino-image/Dockerfile | docker build -q \
+    -t local/openvinotoolkit:render-addon \
+    --build-arg render_gid=${render_gid} \
+    --build-arg container_user=${container_user} -
+  # hack as redirecting stdout anywhere but /dev/null throws a permission denied error
+  # see: https://forum.snapcraft.io/t/eksctl-cannot-write-to-stdout/17254/4
+  docker save local/openvinotoolkit:render-addon | tee ${OPENVINO_TAR_IMAGE} > /dev/null
+  microk8s ctr image import ${OPENVINO_TAR_IMAGE}
+  rm -f ${OPENVINO_TAR_IMAGE}
+  sudo microk8s kubectl apply -f ${DSS_INTEL_POC_ROOT}/manifests/notebook-openvino.yaml
+  sudo microk8s.kubectl wait --for condition=available --timeout 1200s -n dss deployment -l app=user-notebook-openvino
+  echo "Test success: OpenVINO+Jupyter container is running."
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: intel_gpu_plugin/openvino_deployment_{{ driver }}
+category_id: opencl-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check OpenVINO Deployment
+estimated_duration: 1s
+command:
+  set -e
+  all_apps=$(microk8s.kubectl get deployment.apps -n dss -o jsonpath='{.items..metadata.name}')
+  if grep -qw "notebook-openvino" <<<${all_apps}; then
+      echo "Test success: 'notebook-openvino' app is deployed!"
+  else
+      >&2 echo "Test failure: expected result to contain app name 'notebook-openvino' but got ${result}"
       exit 1
   fi
 
@@ -117,20 +254,48 @@ template-resource: graphics_card
 template-filter: graphics_card.driver in ['i915']
 template-engine: jinja2
 template-unit: job
-id: intel_gpu_plugin/cleanup_tests_{{ driver }}
+id: intel_gpu_plugin/openvino_libs_installed_{{ driver }}
 category_id: opencl-regress
 flags: simple
-user: root
 requires: executable.name == 'microk8s'
-_summary: Clean up after tests
-environ:
-  NORMAL_USER
-estimated_duration: 2m
+_summary: Check jupyter and openvino python packages in OpenVINO container
+estimated_duration: 1s
 command:
-  for node in $(sudo microk8s kubectl get nodes -o name); do
-      microk8s.kubectl drain --ignore-daemonsets --delete-emptydir-data "${node}"
-  done
-  echo "Successfully cleaned up microk8s node(s)."
+  set -e
+  pod=$(microk8s.kubectl get pods -n dss -o=jsonpath='{.items..metadata.name}' | grep -o 'notebook-openvino.*')
+  echo "Examining pod ${pod}..."
+  microk8s.kubectl -n dss exec ${pod} -- pip show jupyter
+  microk8s.kubectl -n dss exec ${pod} -- pip show openvino
+  echo "Test success: jupyter and openvino python packages installed in container."
+
+unit: template
+template-resource: graphics_card
+template-filter: graphics_card.driver in ['i915']
+template-engine: jinja2
+template-unit: job
+id: intel_gpu_plugin/openvino_gpu_avail_{{ driver }}
+category_id: opencl-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check OpenVINO GPU Availability
+estimated_duration: 1s
+command:
+  set -e
+  pod=$(microk8s.kubectl get pods -n dss -o=jsonpath='{.items..metadata.name}' | grep -o 'notebook-openvino.*')
+  echo "Examining pod ${pod}..."
+  microk8s kubectl -n dss exec -i --tty=false ${pod} -- python3 \
+  <<EOF
+  import sys
+  import openvino as ov
+  core = ov.Core()
+  if "GPU" in core.available_devices:
+    full_device_name = core.get_property("GPU", "FULL_DEVICE_NAME")
+    print(f"Test success: Intel GPU device ({full_device_name}) available to OpenVINO.")
+    sys.exit(0)
+  else:
+    print("Test failure: No Intel GPU device available to OpenVINO.", file=sys.stderr)
+    sys.exit(1)
+  EOF
 
 unit: template
 template-resource: graphics_card

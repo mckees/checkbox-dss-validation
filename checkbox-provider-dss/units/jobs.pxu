@@ -367,3 +367,127 @@ command:
     remove_ipex
     exit 1
   fi
+
+id: ipex/ipex_gpu_avial
+category_id: dss-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check IPEX GPU Availability
+estimated_duration: 5m
+command:
+  set -e
+  TIMEOUT=1200s
+  DSS_INTEL_MANIFESTS=/tmp/data-science-stack/poc/intel/manifests/
+  launch_notebook() {
+    local fullname=$1
+    local app=$2
+    echo -e "\n\$ dss start ${app} notebook"
+    sudo microk8s kubectl apply -f ${DSS_INTEL_MANIFESTS}/notebook-${app}.yaml
+    echo -e "\n\$ dss ${app} manifest applied"
+    sudo microk8s.kubectl wait \
+      --for condition=available \
+      --timeout $TIMEOUT \
+      -n dss\
+      deployment \
+      -l app=user-notebook-${fullname} > /tmp/ipex_log.txt
+    echo -e "\n\$ dss status"
+    MLFLOW_IP=$(sudo microk8s.kubectl get svc \
+      -n dss \
+      -o jsonpath="{.spec.clusterIP}" \
+      mlflow)
+    NOTEBOOK_IP=$(sudo microk8s.kubectl get svc \
+      -n dss \
+      -o jsonpath="{.spec.clusterIP}" \
+      user-notebook-${fullname})
+    echo "DSS has started successfully!"
+  }
+  remove_ipex() {
+    echo "Removing IPEX"
+    sudo microk8s.kubectl delete -n dss deployment.apps/notebook-pytorch
+    sudo microk8s.kubectl delete -n dss service/user-notebook-pytorch
+  }
+  launch_notebook pytorch ipex
+  echo "Starting ipex import test"
+  kubectl get pods -n dss -o=jsonpath='{.items..metadata.name}'
+  pod=$(kubectl get pods -n dss -o=jsonpath='{.items..metadata.name}' | grep -o 'notebook-pytorch.*')
+  echo "Found PyTorch pod: ${pod}"
+  gpu_grep_out=$(sudo microk8s kubectl -n dss exec ${pod} -- python3 -c '
+  import sys
+  import torch
+  import intel_extension_for_pytorch as ipex
+  print(torch.__version__)
+  print(ipex.__version__)
+  try:
+    [print(f"[{i}]: {torch.xpu.get_device_properties(i)}") for i in range(torch.xpu.device_count())];
+    sys.exit(0)
+  except Exception:
+    print("Encountered an error getting XPU device properties")
+    sys.exit(1)
+  ' | grep "dev_type=.gpu" 2>&1)
+  remove_ipex
+  if [[ -z ${gpu_grep_out} ]]; then
+    echo "FAIL: No GPU found"
+    exit 1
+  elif [[ $gpu_grep_out =~ "gpu" ]]; then
+    echo "PASS: GPU found"
+    exit 0
+  else
+    echo "FAIL: Unexpected result"
+    echo ${gpu_grep_out}
+    exit 1
+  fi
+
+id: itex/itex_gpu_avail
+category_id: dss-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check ITEX GPU Availability
+estimated_duration: 5m
+command:
+  TIMEOUT=1200s
+  DSS_INTEL_MANIFESTS=/tmp/data-science-stack/poc/intel/manifests/
+  launch_notebook() {
+    local fullname=$1
+    local app=$2
+    echo -e "\n\$ dss start ${app} notebook"
+    sudo microk8s kubectl apply -f ${DSS_INTEL_MANIFESTS}/notebook-${app}.yaml
+    sudo microk8s.kubectl wait \
+      --for condition=available \
+      --timeout $TIMEOUT \
+      -n dss\
+      deployment \
+      -l app=user-notebook-${fullname}
+    echo -e "\n\$ dss status"
+    MLFLOW_IP=$(sudo microk8s.kubectl get svc \
+      -n dss \
+      -o jsonpath="{.spec.clusterIP}" \
+      mlflow)
+    NOTEBOOK_IP=$(sudo microk8s.kubectl get svc \
+      -n dss \
+      -o jsonpath="{.spec.clusterIP}" \
+      user-notebook-${fullname})
+    echo "DSS has started successfully!"
+  }
+  remove_itex() {
+    echo "Removing ITEX"
+    sudo microk8s.kubectl delete -n dss deployment.apps/notebook-tensorflow
+    sudo microk8s.kubectl delete -n dss service/user-notebook-tensorflow
+  }
+  launch_notebook tensorflow itex
+  echo "Starting itex GPU check test"
+  pod=$(kubectl get pods -n dss -o=jsonpath='{.items..metadata.name}' | grep -o 'notebook-tensorflow.*')
+  echo "Found Tensorflow pod: ${pod}"
+  gpu_grep_out=$(sudo microk8s kubectl -n dss exec ${pod} -- python3 -c '
+  import tensorflow as tf
+  ' 2>&1 >/dev/null | grep "Intel Extension for Tensorflow\* GPU backend is loaded")
+  remove_itex
+  if [[ -z ${gpu_grep_out} ]]; then
+    echo "ERROR: No GPU found"
+    exit 1
+  elif [[ $gpu_grep_out =~ "GPU backend is loaded" ]]; then
+    echo "PASS: GPU found"
+    exit 0
+  else
+    echo "FAIL: Unexpected result"
+    exit 1
+  fi

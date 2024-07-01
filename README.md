@@ -22,7 +22,7 @@ Install the Checkbox runtime and build/install the dss provider snaps:
 sudo snap install --classic snapcraft
 sudo snap install checkbox22
 lxd init --auto
-git clone https://github.com/mckees/checkbox-dss-validation
+git clone https://github.com/canonical/checkbox-dss-validation
 cd checkbox-dss-validation
 snapcraft
 sudo snap install --dangerous --classic ./checkbox-dss_2.0_amd64.snap

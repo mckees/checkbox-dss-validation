@@ -600,3 +600,70 @@ command:
     >&2 echo "FAIL: Unexpected result"
     exit 1
   fi
+
+id: ipex/ipex_inference
+category_id: dss-regress
+flags: simple
+requires: executable.name == 'microk8s'
+_summary: Check IPEX Inference
+estimated_duration: 5m
+command:
+  TIMEOUT=1200s
+  DSS_INTEL_MANIFESTS=/tmp/data-science-stack/poc/intel/manifests/
+  launch_notebook() {
+    local fullname=$1
+    local app=$2
+    echo -e "\n\$ dss start ${app} notebook"
+    sudo microk8s kubectl apply -f ${DSS_INTEL_MANIFESTS}/notebook-${app}.yaml
+    echo -e "\n\$ dss ${app} manifest applied"
+    sudo microk8s.kubectl wait \
+      --for condition=available \
+      --timeout $TIMEOUT \
+      -n dss\
+      deployment \
+      -l app=user-notebook-${fullname} > /tmp/ipex_log.txt
+    echo -e "\n\$ dss status"
+    MLFLOW_IP=$(sudo microk8s.kubectl get svc \
+      -n dss \
+      -o jsonpath="{.spec.clusterIP}" \
+      mlflow)
+    NOTEBOOK_IP=$(sudo microk8s.kubectl get svc \
+      -n dss \
+      -o jsonpath="{.spec.clusterIP}" \
+      user-notebook-${fullname})
+    echo "DSS has started successfully!"
+  }
+  remove_ipex() {
+    echo "Removing IPEX"
+    sudo microk8s.kubectl delete -n dss deployment.apps/notebook-pytorch
+    sudo microk8s.kubectl delete -n dss service/user-notebook-pytorch
+  }
+  launch_notebook pytorch ipex
+  echo "Starting ipex import test"
+  kubectl get pods -n dss -o=jsonpath='{.items..metadata.name}'
+  pod=$(kubectl get pods -n dss -o=jsonpath='{.items..metadata.name}' | grep -o 'notebook-pytorch.*')
+  echo "Found PyTorch pod: ${pod}"
+  #sudo microk8s kubectl -n dss exec ${pod} -- python3 -c '
+  gpu_grep_out=$(sudo microk8s kubectl -n dss exec ${pod} -- python3 -c '
+  import torch
+  import torchvision.models as models
+  import intel_extension_for_pytorch as ipex
+  model = models.resnet50(weights="ResNet50_Weights.DEFAULT")
+  model.eval()
+  data = torch.rand(1, 3, 224, 224)
+  model = model.to("xpu")
+  data = data.to("xpu")
+  model = ipex.optimize(model)
+  with torch.no_grad():
+      for i in range(500):
+          results = model(data)
+  print("Inference Complete")
+  ' | grep "Inference Complete")
+  remove_ipex
+  if [[ -z ${gpu_grep_out} ]]; then
+    >&2 echo "FAIL: Inference Failed"
+    exit 1
+  else
+    echo "PASS: Inference Succeeded"
+    exit 0
+  fi
